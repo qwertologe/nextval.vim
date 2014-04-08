@@ -18,8 +18,16 @@
 " You should have received a copy of the GNU General Public License
 " along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-" Version: 1.02
+" Version: 1.1
 "
+" Changes: 1.1
+" - Added boolen for python (True/False)
+" - Added integer surrounded by text
+" - Added many hex-variants
+" - Improved float
+" - Bugfix: inc/dec "worked" if you where near a value
+" - Big thanx to serpent for code/feedback/ideas
+" - Added expamples in source for simpler testing
 " Changes: 1.02
 " - Set default keys to overwrite Vims internal cmd C-a (inc) and C-x (dec)
 " Changes: 1.01
@@ -41,6 +49,46 @@
 " During editing position your cursor on a boolean, integer, number or
 " hex value and press + or - in normal mode (esc).
 
+" Tests:
+" 15 # int
+" -5 # neg. int
+" 0.1 # num/float
+" 0.25 # num/float
+" .2 # num/float
+" -0.1 # num/float
+" test5 # int surrounded
+" test123test # int surrounded
+" true # boolean
+" TRUE # boolean
+" True # boolean
+" 2b # hex
+" 0a # hex
+" 0xf9 # hex
+" 0F # hex
+" f # hex
+" F # hex
+" 5A3 # tex
+" &#x2019 # xml/xhtml
+" \x19 # unix, bash
+" FFh or 05A3H # intel assembly
+" #9 # modulo2
+" 16#5A3# # ada/vhdl
+" 16r5A3 # smalltalk/algol
+" 16#5A7 # postscript/bash
+" \u0019 \U00000019 # bash
+" #16r4a # common lisp
+" &H5A3 or &5a3 # several basic
+" 0h5A3 ti series
+" U+20AD # unicode
+" S=U+9 # integer
+" $5A3 # assembly/basic
+" H'ABCD' # microchip
+" x"5A3" # vhdl
+" 8'hFF # verilog
+" #x4a # common lisp
+" X'5A3' # ibm mainframe
+
+
 " check if already loaded
 if exists('g:nextval_plugin_loaded')
 	finish
@@ -60,6 +108,13 @@ nnoremap <SID>nextvalInc :call <SID>nextval('+')<CR>
 nnoremap <unique> <script> <Plug>nextvalDec <SID>nextvalDec
 nnoremap <SID>nextvalDec :call <SID>nextval('-')<CR>
 
+let s:re_hex = "\\(8'h\\|#16r\\|16#\\|16r\\|" " more pre-chars
+let s:re_hex = s:re_hex . 'x"\|#x\|0[xh]\|\\[xuU]\|[XH]' . "'\\|" " 2 pre-chars
+let s:re_hex = s:re_hex . '[#\$hH]\|' " 1 pre-char
+let s:re_hex = s:re_hex . '\|\)' " no pre-chars
+let s:re_hex = s:re_hex . '\([0-9a-fA-F]\+\)' " hex himself
+let s:re_hex = s:re_hex . "\\([hH#\"']\\|\\)" " post-chars
+
 " main
 function s:nextval(operator)
 	if !exists('b:nextval_column')
@@ -70,20 +125,27 @@ function s:nextval(operator)
 		let b:nextval_hexupper = 0
 	endif
 
-	if strpart(getline('.'),col('.')-1,1) == '='
-		return
-	endif
-
 	" remember and adjust settings
 	if 'a' == 'A'
 		setlocal noignorecase
-    let ignorecase=1
-  endif
-	let iskeyword = &iskeyword   " remember current iskeyword
-  silent setlocal iskeyword+=# " enable #XX hex values
+		let s:ignorecase = 1
+	endif
+	let s:iskeyword = &iskeyword   " remember current iskeyword
+	silent setlocal iskeyword+=# " enable #XX hex values
+	silent setlocal iskeyword+=$ " enable #XX hex values
+	silent setlocal iskeyword+=\" " enable #XX hex values
+	silent setlocal iskeyword+=' " enable #XX hex values
+	silent setlocal iskeyword+=\\ " enable \xXX hex values
 	silent setlocal iskeyword+=- " enable negative values
+	silent setlocal iskeyword+=. " enable float values
 
 	let word = expand('<cword>')
+
+	" check if cursor is really on the expanded cword (vim-bug?!)
+	if match(word,getline(".")[col(".") - 1]) < 0
+		call s:cleanup()
+		return
+	endif
 
 	" forget type if col/line changed
 	if b:nextval_column != col('.') || b:nextval_line != line('.')
@@ -91,16 +153,26 @@ function s:nextval(operator)
 	endif
 
 	" determine type of word (int/hex)
-	if matchstr(word,'\([1-9][0-9]*\)\|0') == word
+	if matchstr(word,'\(-\?[1-9][0-9]*\)\|0') == word
 		if b:nextval_type != 'hex'
 			let b:nextval_type = 'int'
 		endif
-	elseif matchstr(word,'[0-9]*\.[0-9]\+') == word
+	elseif matchstr(word,'-\?[0-9]*\.[0-9]\+') == word
 		let b:nextval_type = 'num'
-	elseif matchstr(word,'\(0x\|#\)\{0,1}[0-9a-fA-F]\+') == word
+	elseif matchstr(word, s:re_hex) == word
 		let b:nextval_type = 'hex'
 	elseif matchstr(word,'true\|false\c') == word
-    let b:nextval_type = 'bool'
+		let b:nextval_type = 'bool'
+	elseif matchstr(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)') == word " increment/decrement integer surrounded by text (i.e. abc12)
+		let b:nextval_type = 'int'
+		let word_parts = matchlist(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)')
+		let word_prefix = word_parts[1]
+		let word = word_parts[2]
+		let word_suffix = word_parts[3]
+		if str2nr(word) == 0 && a:operator == '-'	" do nothing when trying to decrement 0
+			let b:nextval_type = 'ignore'
+			unlet word_parts
+		endif
 	endif
 
 	if b:nextval_type == 'int'
@@ -113,19 +185,28 @@ function s:nextval(operator)
 		let newword = <SID>nextbool(word)
 	endif
 
+	if exists('word_parts')
+		let newword = word_prefix . newword . word_suffix
+	endif
+
 	if exists('newword')
 		execute 'normal ciw' . newword
 		execute 'normal wb'
-	  let b:nextval_column = col('.')
+		let b:nextval_column = col('.')
 		let b:nextval_line = line('.')
 		"execute ':w'
 	endif
+	call s:cleanup()
+	return
+endfunction
 
-	" restore settings
-	if exists('ignorecase')
+" restore settings
+function s:cleanup()
+	if exists('s:ignorecase')
 		setlocal ignorecase
 	endif
-  silent execute 'setlocal iskeyword='.iskeyword
+	silent execute 'setlocal iskeyword='.s:iskeyword
+	return
 endfunction
 
 " switch boolean value
@@ -138,6 +219,10 @@ function s:nextbool(value)
 		return 'TRUE'
 	elseif a:value == 'TRUE'
 		return 'FALSE'
+	elseif a:value == 'False'
+		return 'True'
+	elseif a:value == 'True'
+		return 'False'
 	endif
 endfunction
 
@@ -159,18 +244,15 @@ endfunction
 
 " change hex value (#X; 0xX; X)
 function s:nexthex(value,operator)
-	if strpart(a:value,0,2) == '0x'
-		let value = strpart(a:value,2)
-		let prefix = '0x'
-	elseif strpart(a:value,0,1) == '#'
-		let value = strpart(a:value,1)
-		let prefix = '#'
-	else
-		let value = a:value
-		let prefix = ''
-	endif
+	let m = matchlist(a:value,s:re_hex)
+	let prefix = m[1]
+	let value = m[2]
+	let suffix = m[3]
 	let len = len(value)
 	let newval = a:operator == '+' ? str2nr(value,16)+1 : str2nr(value,16)-1
+	if strpart(value,0,1) != '0' " || ... todo ?! when will a use have fixed digits?! ... fmod(len,2)
+		let len = 1
+	endif
 	if len(matchstr(value,'[A-F]'))
 		let b:nextval_hexupper = 1
 	elseif len(matchstr(value,'[a-f]'))
@@ -181,6 +263,6 @@ function s:nexthex(value,operator)
 	else
 		let newhex = printf('%0' . len . 'x', newval)
 	endif
-	return prefix . newhex
+	return prefix . newhex . suffix
 endfunction
 
