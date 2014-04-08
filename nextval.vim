@@ -18,8 +18,10 @@
 " You should have received a copy of the GNU General Public License
 " along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-" Version: 1.1
+" Version: 1.11
 "
+" Changes: 1.11
+" - Bugfix for increment/decrement in last empty line (Serpent)
 " Changes: 1.1
 " - Added boolen for python (True/False)
 " - Added integer surrounded by text
@@ -142,7 +144,7 @@ function s:nextval(operator)
 	let word = expand('<cword>')
 
 	" check if cursor is really on the expanded cword (vim-bug?!)
-	if match(word,getline(".")[col(".") - 1]) < 0
+	if match(word,getline(".")[col(".") - 1]) < 0 || word == ''
 		call s:cleanup()
 		return
 	endif

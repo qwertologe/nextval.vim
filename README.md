@@ -18,9 +18,6 @@ During editing position your cursor on a boolean, integer, number or hex value a
 * hex=ab # + -> ac
 * hex=1B07 # -> 1B08
 * hex=#9 # + -> a
-
-New variants:
-
 * test5 # int surrounded
 * test123test # int surrounded
 * True # boolean
@@ -45,7 +42,6 @@ New variants:
 * 8'hFF # verilog
 * #x4a # common lisp
 * X'5A3' # ibm mainframe
-
 
 ## INSTALLATION
 
