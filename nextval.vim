@@ -18,35 +18,54 @@
 " You should have received a copy of the GNU General Public License
 " along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+" Version: 1.01
+" - Added standard check if already loaded
+" - Uses <Plug> for automatic mapping (if not already defined)
+"   -> Changed plugin calling - see usage
+" - Removed forgotten debug output (sorry)
+" - Added buffer awareness
+"
 " Installation:
 " # if you use pathogen:
 " mkdir -p ~/.vim/bundle/netxval/plugin
 " cp nextval.vim  ~/.vim/bundle/netxval/plugin
 
 " Usage: (e.g. in .vimrc)
-" nnoremap <silent>+ :call Incval()<CR>
-" nnoremap <silent>- :call Decval()<CR>
+" This is the default mapping if you did not define a setting on your own
+" nmap <silent> <unique> + <Plug>nextvalInc
+" nmap <silent> <unique> - <Plug>nextvalDec
 " During editing position your cursor on a boolean, integer, number or
 " hex value and press + or - in normal mode (esc).
 
-" vars to remember last cursor position and determined word-type
-let g:nextval_column = ''
-let g:nextval_line = ''
-let g:nextval_type = ''
-let g:nextval_hexupper = 0
+" check if already loaded
+if exists('g:nextval_plugin_loaded')
+	finish
+endif
+let g:nextval_plugin_loaded = 1
 
-" external used
-function Incval()
-	call <SID>nextval('+')
-endfunction
+" default keymappings
+if !hasmapto('<Plug>nextvalInc')
+	nmap <silent> <unique> + <Plug>nextvalInc
+endif
+if !hasmapto('<Plug>nextvalDec')
+	nmap <silent> <unique> - <Plug>nextvalDec
+endif
+" map <Plug> to internal function
+nnoremap <unique> <script> <Plug>nextvalInc <SID>nextvalInc
+nnoremap <SID>nextvalInc :call <SID>nextval('+')<CR>
+nnoremap <unique> <script> <Plug>nextvalDec <SID>nextvalDec
+nnoremap <SID>nextvalDec :call <SID>nextval('-')<CR>
 
-" external used
-function Decval()
-	call <SID>nextval('-')
-endfunction
+" main
+function s:nextval(operator)
+	if !exists('b:nextval_column')
+		" vars to remember last cursor position and determined word-type
+		let b:nextval_column = ''
+		let b:nextval_line = ''
+		let b:nextval_type = ''
+		let b:nextval_hexupper = 0
+	endif
 
-" internal used
-function <SID>nextval(operator)
 	if strpart(getline('.'),col('.')-1,1) == '='
 		return
 	endif
@@ -63,38 +82,38 @@ function <SID>nextval(operator)
 	let word = expand('<cword>')
 
 	" forget type if col/line changed
-	if g:nextval_column != col('.') || g:nextval_line != line('.')
-		let g:nextval_type = ''
+	if b:nextval_column != col('.') || b:nextval_line != line('.')
+		let b:nextval_type = ''
 	endif
 
 	" determine type of word (int/hex)
 	if matchstr(word,'\([1-9][0-9]*\)\|0') == word
-		if g:nextval_type != 'hex'
-			let g:nextval_type = 'int'
+		if b:nextval_type != 'hex'
+			let b:nextval_type = 'int'
 		endif
 	elseif matchstr(word,'[0-9]*\.[0-9]\+') == word
-		let g:nextval_type = 'num'
+		let b:nextval_type = 'num'
 	elseif matchstr(word,'\(0x\|#\)\{0,1}[0-9a-fA-F]\+') == word
-		let g:nextval_type = 'hex'
+		let b:nextval_type = 'hex'
 	elseif matchstr(word,'true\|false\c') == word
-    let g:nextval_type = 'bool'
+    let b:nextval_type = 'bool'
 	endif
-echom g:nextval_type.' '.word
-	if g:nextval_type == 'int'
+
+	if b:nextval_type == 'int'
 		let newword = a:operator == '+' ? str2nr(word)+1 : str2nr(word)-1
-	elseif g:nextval_type == 'num'
+	elseif b:nextval_type == 'num'
 		let newword = <SID>nextnum(word,a:operator)
-	elseif g:nextval_type == 'hex'
+	elseif b:nextval_type == 'hex'
 		let newword = <SID>nexthex(word,a:operator)
-	elseif g:nextval_type == 'bool'
+	elseif b:nextval_type == 'bool'
 		let newword = <SID>nextbool(word)
 	endif
 
 	if exists('newword')
 		execute 'normal ciw' . newword
 		execute 'normal wb'
-	  let g:nextval_column = col('.')
-		let g:nextval_line = line('.')
+	  let b:nextval_column = col('.')
+		let b:nextval_line = line('.')
 		"execute ':w'
 	endif
 
@@ -106,7 +125,7 @@ echom g:nextval_type.' '.word
 endfunction
 
 " switch boolean value
-function <SID>nextbool(value)
+function s:nextbool(value)
 	if a:value == 'false'
 		return 'true'
 	elseif a:value == 'true'
@@ -119,7 +138,7 @@ function <SID>nextbool(value)
 endfunction
 
 " change numeric value (n; ,n; n,n)
-function <SID>nextnum(value,operator)
+function s:nextnum(value,operator)
 	let dotpos = match(a:value,'\.')
 	let fractdigits = len(a:value)-dotpos-1
 	if a:operator == '+'
@@ -135,7 +154,7 @@ function <SID>nextnum(value,operator)
 endfunction
 
 " change hex value (#X; 0xX; X)
-function <SID>nexthex(value,operator)
+function s:nexthex(value,operator)
 	if strpart(a:value,0,2) == '0x'
 		let value = strpart(a:value,2)
 		let prefix = '0x'
@@ -149,11 +168,11 @@ function <SID>nexthex(value,operator)
 	let len = len(value)
 	let newval = a:operator == '+' ? str2nr(value,16)+1 : str2nr(value,16)-1
 	if len(matchstr(value,'[A-F]'))
-		let g:nextval_hexupper = 1
+		let b:nextval_hexupper = 1
 	elseif len(matchstr(value,'[a-f]'))
-		let g:nextval_hexupper = 0
+		let b:nextval_hexupper = 0
 	endif
-	if g:nextval_hexupper
+	if b:nextval_hexupper
 		let newhex = printf('%0' . len . 'X', newval)
 	else
 		let newhex = printf('%0' . len . 'x', newval)
