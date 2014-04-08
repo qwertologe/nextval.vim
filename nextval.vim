@@ -18,7 +18,11 @@
 " You should have received a copy of the GNU General Public License
 " along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-" Version: 1.01
+" Version: 1.02
+"
+" Changes: 1.02
+" - Set default keys to overwrite Vims internal cmd C-a (inc) and C-x (dec)
+" Changes: 1.01
 " - Added standard check if already loaded
 " - Uses <Plug> for automatic mapping (if not already defined)
 "   -> Changed plugin calling - see usage
@@ -45,10 +49,10 @@ let g:nextval_plugin_loaded = 1
 
 " default keymappings
 if !hasmapto('<Plug>nextvalInc')
-	nmap <silent> <unique> + <Plug>nextvalInc
+	nmap <silent> <unique> <C-a> <Plug>nextvalInc
 endif
 if !hasmapto('<Plug>nextvalDec')
-	nmap <silent> <unique> - <Plug>nextvalDec
+	nmap <silent> <unique> <C-x> <Plug>nextvalDec
 endif
 " map <Plug> to internal function
 nnoremap <unique> <script> <Plug>nextvalInc <SID>nextvalInc
