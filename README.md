@@ -42,6 +42,8 @@ During editing position your cursor on a boolean, integer, number or hex value a
 * 8'hFF # verilog
 * #x4a # common lisp
 * X'5A3' # ibm mainframe
+* 'yes' # configuration
+* "false" # configuration
 
 ## INSTALLATION
 

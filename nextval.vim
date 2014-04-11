@@ -1,7 +1,7 @@
 "
 " nextval - Increment/decrement the current value with one keystroke
 "
-" Copyright (C) 2013 Michael Arlt
+" Copyright (C) 2013-2014 Michael Arlt
 "
 " Distributed under the GNU General Public License (GPL) 3.0 or higher
 " - see http://www.gnu.org/licenses/gpl.html
@@ -18,8 +18,13 @@
 " You should have received a copy of the GNU General Public License
 " along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-" Version: 1.11
+" Version: 1.2
 "
+" Changes: 1.2 (almost all from Serpent)
+" - support for float values suffixed with text (e.g. CSS values 2.1em)
+" - support for yes/no bool values (used in FreeBSD rc.conf)
+" - bool values can be enclosed in quotes/double quotes
+" - internal change due to unit tests
 " Changes: 1.11
 " - Bugfix for increment/decrement in last empty line (Serpent)
 " Changes: 1.1
@@ -89,6 +94,8 @@
 " 8'hFF # verilog
 " #x4a # common lisp
 " X'5A3' # ibm mainframe
+" 'yes' # configuration files
+" "false" # configuration files
 
 
 " check if already loaded
@@ -159,12 +166,20 @@ function s:nextval(operator)
 		if b:nextval_type != 'hex'
 			let b:nextval_type = 'int'
 		endif
-	elseif matchstr(word,'-\?[0-9]*\.[0-9]\+') == word
+	elseif matchstr(word,'\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?') == word
 		let b:nextval_type = 'num'
+		let word_parts = matchlist(word,'\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?')
+		let word_prefix = ''
+		let word = word_parts[1]
+		let word_suffix = word_parts[2]
 	elseif matchstr(word, s:re_hex) == word
 		let b:nextval_type = 'hex'
-	elseif matchstr(word,'true\|false\c') == word
+	elseif matchstr(word,'\([''"]\)\?\(true\|false\|yes\|no\c\)\(\1\)\?') == word
 		let b:nextval_type = 'bool'
+		let word_parts = matchlist(word,'\([''"]\)\?\(true\|false\|yes\|no\c\)\(\1\)\?')
+		let word_prefix = word_parts[1]
+		let word = word_parts[2]
+		let word_suffix = word_parts[1]
 	elseif matchstr(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)') == word " increment/decrement integer surrounded by text (i.e. abc12)
 		let b:nextval_type = 'int'
 		let word_parts = matchlist(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)')
@@ -178,7 +193,7 @@ function s:nextval(operator)
 	endif
 
 	if b:nextval_type == 'int'
-		let newword = a:operator == '+' ? str2nr(word)+1 : str2nr(word)-1
+		let newword = <SID>nextint(word,a:operator)
 	elseif b:nextval_type == 'num'
 		let newword = <SID>nextnum(word,a:operator)
 	elseif b:nextval_type == 'hex'
@@ -213,19 +228,26 @@ endfunction
 
 " switch boolean value
 function s:nextbool(value)
-	if a:value == 'false'
-		return 'true'
-	elseif a:value == 'true'
-		return 'false'
-	elseif a:value == 'FALSE'
-		return 'TRUE'
-	elseif a:value == 'TRUE'
-		return 'FALSE'
-	elseif a:value == 'False'
-		return 'True'
-	elseif a:value == 'True'
-		return 'False'
-	endif
+	let values={
+\               'false': 'true',
+\               'FALSE': 'TRUE',
+\               'False': 'True',
+\               'no': 'yes',
+\               'No': 'Yes',
+\               'NO': 'YES'
+\	}
+	for val1 in keys(values)
+		let val2=values[val1]
+		if a:value == val1
+			return val2
+		elseif a:value == val2
+			return val1
+		endif
+	endfor
+endfunction
+
+function s:nextint(value,operator)
+	return a:operator == '+' ? str2nr(a:value)+1 : str2nr(a:value)-1
 endfunction
 
 " change numeric value (n; ,n; n,n)
