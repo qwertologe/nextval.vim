@@ -5,7 +5,7 @@ Plugin for vim - Inc-/decrement the current value (bool, int, numeric, hex) with
 
 ## DESCRIPTION
 
-During editing position your cursor on a boolean, integer, number or hex value and press + or - in normal mode (esc).
+During editing position your cursor on a boolean, integer, number or hex value and press C-A or C-X in normal mode.
 
 ## Examples
 
