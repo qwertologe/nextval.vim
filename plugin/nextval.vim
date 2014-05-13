@@ -124,42 +124,8 @@ let s:re_hex = s:re_hex . '\|\)' " no pre-chars
 let s:re_hex = s:re_hex . '\([0-9a-fA-F]\+\)' " hex himself
 let s:re_hex = s:re_hex . "\\([hH#\"']\\|\\)" " post-chars
 
-" main
-function s:nextval(operator)
-	if !exists('b:nextval_column')
-		" vars to remember last cursor position and determined word-type
-		let b:nextval_column = ''
-		let b:nextval_line = ''
-		let b:nextval_type = ''
-		let b:nextval_hexupper = 0
-	endif
-
-	" remember and adjust settings
-	if 'a' == 'A'
-		setlocal noignorecase
-		let s:ignorecase = 1
-	endif
-	let s:iskeyword = &iskeyword   " remember current iskeyword
-	silent setlocal iskeyword+=# " enable #XX hex values
-	silent setlocal iskeyword+=$ " enable #XX hex values
-	silent setlocal iskeyword+=\" " enable #XX hex values
-	silent setlocal iskeyword+=' " enable #XX hex values
-	silent setlocal iskeyword+=\\ " enable \xXX hex values
-	silent setlocal iskeyword+=- " enable negative values
-	silent setlocal iskeyword+=. " enable float values
-
-	let word = expand('<cword>')
-
-	" check if cursor is really on the expanded cword (vim-bug?!)
-	if match(word,getline(".")[col(".") - 1]) < 0 || word == ''
-		call s:cleanup()
-		return
-	endif
-
-	" forget type if col/line changed
-	if b:nextval_column != col('.') || b:nextval_line != line('.')
-		let b:nextval_type = ''
-	endif
+function s:nextval_exec(word, operator)
+	let word=a:word
 
 	" determine type of word (int/hex)
 	if matchstr(word,'\(-\?[1-9][0-9]*\)\|0') == word
@@ -192,6 +158,7 @@ function s:nextval(operator)
 		endif
 	endif
 
+	let newword=''
 	if b:nextval_type == 'int'
 		let newword = <SID>nextint(word,a:operator)
 	elseif b:nextval_type == 'num'
@@ -205,8 +172,53 @@ function s:nextval(operator)
 	if exists('word_parts')
 		let newword = word_prefix . newword . word_suffix
 	endif
+	return newword
+endfunction
 
-	if exists('newword')
+function s:nextval_reset()
+		" vars to remember last cursor position and determined word-type
+		let b:nextval_column = ''
+		let b:nextval_line = ''
+		let b:nextval_type = ''
+		let b:nextval_hexupper = 0
+endfunction
+
+" main
+function s:nextval(operator)
+	if !exists('b:nextval_column')
+		call s:nextval_reset()
+	endif
+
+	" remember and adjust settings
+	if 'a' == 'A'
+		setlocal noignorecase
+		let s:ignorecase = 1
+	endif
+	let s:iskeyword = &iskeyword   " remember current iskeyword
+	silent setlocal iskeyword+=# " enable #XX hex values
+	silent setlocal iskeyword+=$ " enable #XX hex values
+	silent setlocal iskeyword+=\" " enable #XX hex values
+	silent setlocal iskeyword+=' " enable #XX hex values
+	silent setlocal iskeyword+=\\ " enable \xXX hex values
+	silent setlocal iskeyword+=- " enable negative values
+	silent setlocal iskeyword+=. " enable float values
+
+	let word = expand('<cword>')
+
+	" check if cursor is really on the expanded cword (vim-bug?!)
+	if match(word,getline(".")[col(".") - 1]) < 0 || word == ''
+		call s:cleanup()
+		return
+	endif
+
+	" forget type if col/line changed
+	if b:nextval_column != col('.') || b:nextval_line != line('.')
+		let b:nextval_type = ''
+	endif
+
+	let newword=s:nextval_exec(word, a:operator)
+
+	if exists('newword') && len(newword)>0
 		execute 'normal ciw' . newword
 		execute 'normal wb'
 		let b:nextval_column = col('.')

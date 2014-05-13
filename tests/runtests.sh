@@ -1,2 +1,2 @@
 #!/bin/sh
-vim --noplugin -S ../nextval.vim -S nextval_test.vim
+vim --noplugin -S ../plugin/nextval.vim -S nextval_test.vim

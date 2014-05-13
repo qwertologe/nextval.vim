@@ -8,6 +8,8 @@ if empty(s:snr)
 	throw 'nextval plugin is not loaded'
 endif
 
+let s:nextval_exec=function(s:snr . "_nextval_exec")
+let s:nextval_reset=function(s:snr . "_nextval_reset")
 let s:nextbool=function(s:snr . "_nextbool")
 let s:nextnum=function(s:snr . "_nextnum")
 let s:nextint=function(s:snr . "_nextint")
@@ -106,11 +108,45 @@ function Test_nextval_hex()
 	endfor
 endfunction
 
+function Test_nextval_exec()
+	call Vest_test_name('nextval_exec')
+	" array of [value, value-decremented, value-incremented]
+	let tests=[
+\		['12', '11', '13'],
+\		['.5', '.4', '.6'],
+\		['0.1em', '0.0em', '0.2em'],
+\		['test1', 'test0', 'test2'],
+\		['foo4bar', 'foo3bar', 'foo5bar'],
+\		['#x2019', '#x2018', '#x201a'],
+\		['\x4a', '\x49', '\x4b'],
+\		['#a', '#9', '#b'],
+\		['16#cc#', '16#cb#', '16#cd#'],
+\		['16rcc', '16rcb', '16rcd'],
+\		['16#cc', '16#cb', '16#cd'],
+\		['\u0019', '\u0018', '\u001a'],
+\		['#16rcc', '#16rcb', '#16rcd'],
+\		['0ha0', '0h9f', '0ha1'],
+\		['$20', '$1f', '$21'],
+\		["H'AB'", "H'AA'", "H'AC'"],
+\		['x"5f"', 'x"5e"', 'x"60"'],
+\		["8'hFF", "8'hFE", "8'h100"],
+\		['#x10', '#xf', '#x11'],
+\	]
+	for val in tests
+		call s:nextval_reset()
+		let v_inc=s:nextval_exec(val[0], '+')
+		let v_dec=s:nextval_exec(val[0], '-')
+		call Vest_assert_equal(v_inc, val[2])
+		call Vest_assert_equal(v_dec, val[1])
+	endfor
+endfunction
+
 let s:tests=[
 \       function("Test_nextval_bool"),
 \       function("Test_nextval_num"),
 \       function("Test_nextval_int"),
-\       function("Test_nextval_hex")
+\       function("Test_nextval_hex"),
+\       function("Test_nextval_exec")
 \ ]
 
 call Vest_run(s:tests)
