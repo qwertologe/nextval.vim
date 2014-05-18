@@ -20,9 +20,16 @@ function Vest_test_name(name)
 	let s:test_name=a:name
 endfunction
 
-function Vest_assert_equal(x, y)
-	if a:x != a:y
-		throw "Assert failed: " . a:x . " = " . a:y
+function Vest_assert_equal(result, assert, ...)
+	if a:assert != a:result
+		if a:0 > 0
+			let message = a:1
+		else
+			let message = '{%result} = {%assert}'
+		endif
+		let message = substitute(message, '{%result}', a:result, 'g')
+		let message = substitute(message, '{%assert}', a:assert, 'g')
+		throw "Assert failed: " . message
 	endif
 endfunction
 

@@ -53,8 +53,8 @@ function Test_nextval_num()
 	for val in values
 		let r_inc=s:nextnum(val[0], '+')
 		let r_dec=s:nextnum(val[0], '-')
-		call Vest_assert_equal(r_dec, val[1])
-		call Vest_assert_equal(r_inc, val[2])
+		call Vest_assert_equal(r_dec, val[1], "decrementing ".val[0]." returned {%result}; {%assert} expexted")
+		call Vest_assert_equal(r_inc, val[2], "incrementing ".val[0]." returned {%result}; {%assert} expexted")
 	endfor
 endfunction
 
@@ -68,8 +68,8 @@ function Test_nextval_int()
 	for val in values
 		let r_inc=s:nextint(val[0], '+')
 		let r_dec=s:nextint(val[0], '-')
-		call Vest_assert_equal(r_dec, val[1])
-		call Vest_assert_equal(r_inc, val[2])
+		call Vest_assert_equal(r_dec, val[1], "decrementing ".val[0]." returned {%result}; {%assert} expected")
+		call Vest_assert_equal(r_inc, val[2], "incrementing ".val[0]." returned {%result}; {%assert} expected")
 	endfor
 endfunction
 
@@ -103,8 +103,8 @@ function Test_nextval_hex()
 	for val in values
 		let r_inc=s:nexthex(val[0], '+')
 		let r_dec=s:nexthex(val[0], '-')
-		call Vest_assert_equal(r_dec, val[1])
-		call Vest_assert_equal(r_inc, val[2])
+		call Vest_assert_equal(r_dec, val[1], "decrementing ".val[0]." returned {%result}; {%assert} expected")
+		call Vest_assert_equal(r_inc, val[2], "incrementing ".val[0]." returned {%result}; {%assert} expected")
 	endfor
 endfunction
 
@@ -136,8 +136,8 @@ function Test_nextval_exec()
 		call s:nextval_reset()
 		let v_inc=s:nextval_exec(val[0], '+')
 		let v_dec=s:nextval_exec(val[0], '-')
-		call Vest_assert_equal(v_inc, val[2])
-		call Vest_assert_equal(v_dec, val[1])
+		call Vest_assert_equal(v_inc, val[2], "decrementing ".val[0]." returned {%result}; {%assert} expected")
+		call Vest_assert_equal(v_dec, val[1], "incrementing ".val[0]." returned {%result}; {%assert} expected")
 	endfor
 endfunction
 
