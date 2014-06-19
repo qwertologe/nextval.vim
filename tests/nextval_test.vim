@@ -131,13 +131,16 @@ function Test_nextval_exec()
 \		['x"5f"', 'x"5e"', 'x"60"'],
 \		["8'hFF", "8'hFE", "8'h100"],
 \		['#x10', '#xf', '#x11'],
+\		["'0.1'", "'0.0'", "'0.2'"],
+\		["'0.9foo'", "'0.8foo'", "'1.0foo'"],
+\		['"0.9foo"', '"0.8foo"', '"1.0foo"'],
 \	]
 	for val in tests
 		call s:nextval_reset()
 		let v_inc=s:nextval_exec(val[0], '+')
 		let v_dec=s:nextval_exec(val[0], '-')
-		call Vest_assert_equal(v_inc, val[2], "decrementing ".val[0]." returned {%result}; {%assert} expected")
-		call Vest_assert_equal(v_dec, val[1], "incrementing ".val[0]." returned {%result}; {%assert} expected")
+		call Vest_assert_equal(v_inc, val[2], "incrementing ".val[0]." returned {%result}; {%assert} expected")
+		call Vest_assert_equal(v_dec, val[1], "decrementing ".val[0]." returned {%result}; {%assert} expected")
 	endfor
 endfunction
 

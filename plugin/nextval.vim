@@ -124,6 +124,8 @@ let s:re_hex = s:re_hex . '\|\)' " no pre-chars
 let s:re_hex = s:re_hex . '\([0-9a-fA-F]\+\)' " hex himself
 let s:re_hex = s:re_hex . "\\([hH#\"']\\|\\)" " post-chars
 
+let s:re_num = '\([''"]\?\)\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?'
+
 function s:nextval_exec(word, operator)
 	let word=a:word
 
@@ -132,12 +134,12 @@ function s:nextval_exec(word, operator)
 		if b:nextval_type != 'hex'
 			let b:nextval_type = 'int'
 		endif
-	elseif matchstr(word,'\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?') == word
+	elseif matchstr(word,s:re_num) == word
 		let b:nextval_type = 'num'
-		let word_parts = matchlist(word,'\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?')
-		let word_prefix = ''
-		let word = word_parts[1]
-		let word_suffix = word_parts[2]
+		let word_parts = matchlist(word, s:re_num)
+		let word_prefix = word_parts[1]
+		let word = word_parts[2]
+		let word_suffix = word_parts[3]
 	elseif matchstr(word, s:re_hex) == word
 		let b:nextval_type = 'hex'
 	elseif matchstr(word,'\([''"]\)\?\(true\|false\|yes\|no\c\)\(\1\)\?') == word
