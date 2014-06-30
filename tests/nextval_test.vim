@@ -28,7 +28,10 @@ function Test_nextval_bool()
 \               'False': 'True',
 \               'no': 'yes',
 \               'No': 'Yes',
-\               'NO': 'YES'
+\               'NO': 'YES',
+\               'off': 'on',
+\               'Off': 'On',
+\               'OFF': 'ON'
 \	}
 	for val1 in keys(values)
 		let val2=values[val1]
