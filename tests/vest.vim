@@ -21,7 +21,7 @@ function Vest_test_name(name)
 endfunction
 
 function Vest_assert_equal(result, assert, ...)
-	if a:assert != a:result
+	if a:assert.'' != a:result.''
 		if a:0 > 0
 			let message = a:1
 		else
