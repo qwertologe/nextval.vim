@@ -126,6 +126,8 @@ let s:re_hex = s:re_hex . "\\([hH#\"']\\|\\)" " post-chars
 
 let s:re_num = '\([''"]\?\)\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?'
 
+let s:re_bool = '\([''"]\)\?\(true\|false\|yes\|no\|on\|off\c\)\([''"]\)\?'
+
 function s:nextval_exec(word, operator)
 	let word=a:word
 
@@ -142,12 +144,12 @@ function s:nextval_exec(word, operator)
 		let word_suffix = word_parts[3]
 	elseif matchstr(word, s:re_hex) == word
 		let b:nextval_type = 'hex'
-	elseif matchstr(word,'\([''"]\)\?\(true\|false\|yes\|no\c\)\(\1\)\?') == word
+	elseif matchstr(word, s:re_bool) == word
 		let b:nextval_type = 'bool'
-		let word_parts = matchlist(word,'\([''"]\)\?\(true\|false\|yes\|no\c\)\(\1\)\?')
+		let word_parts = matchlist(word, s:re_bool)
 		let word_prefix = word_parts[1]
 		let word = word_parts[2]
-		let word_suffix = word_parts[1]
+		let word_suffix = word_parts[3]
 	elseif matchstr(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)') == word " increment/decrement integer surrounded by text (i.e. abc12)
 		let b:nextval_type = 'int'
 		let word_parts = matchlist(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)')

@@ -137,6 +137,9 @@ function Test_nextval_exec()
 \		["'0.1'", "'0.0'", "'0.2'"],
 \		["'0.9foo'", "'0.8foo'", "'1.0foo'"],
 \		['"0.9foo"', '"0.8foo"', '"1.0foo"'],
+\		['yes"', 'no"', 'no"'],
+\		['on', 'off', 'off'],
+\		['Off', 'On', 'On'],
 \	]
 	for val in tests
 		call s:nextval_reset()
