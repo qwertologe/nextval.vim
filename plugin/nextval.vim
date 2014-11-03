@@ -223,8 +223,10 @@ function s:nextval(operator)
 	let newword=s:nextval_exec(word, a:operator)
 
 	if exists('newword') && len(newword)>0
+		setlocal paste
 		execute 'normal ciw' . newword
-		execute 'normal wb'
+		setlocal nopaste
+		silent! execute 'normal wb'
 		let b:nextval_column = col('.')
 		let b:nextval_line = line('.')
 		"execute ':w'
