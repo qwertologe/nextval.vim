@@ -128,6 +128,10 @@ let s:re_num = '\([''"]\?\)\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?'
 
 let s:re_bool = '\([''"]\)\?\(true\|false\|yes\|no\|on\|off\c\)\([''"]\)\?'
 
+if exists('g:nextval_hexupper') == 0
+  let g:nextval_hexupper = 0
+endif
+
 function s:nextval_exec(word, operator)
 	let word=a:word
 
@@ -184,7 +188,7 @@ function s:nextval_reset()
 		let b:nextval_column = ''
 		let b:nextval_line = ''
 		let b:nextval_type = ''
-		let b:nextval_hexupper = 0
+		let b:nextval_hexupper = g:nextval_hexupper
 endfunction
 
 " main
