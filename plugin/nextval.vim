@@ -128,6 +128,8 @@ let s:re_num = '\([''"]\?\)\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?'
 
 let s:re_bool = '\([''"]\)\?\(true\|false\|yes\|no\|on\|off\c\)\([''"]\)\?'
 
+let s:re_int = "\\(\\d\*'d\\|[^0-9]\*\\)\\([0-9]\\+\\)\\([^0-9]\*\\)"
+
 function s:nextval_exec(word, operator)
 	let word=a:word
 
@@ -150,9 +152,9 @@ function s:nextval_exec(word, operator)
 		let word_prefix = word_parts[1]
 		let word = word_parts[2]
 		let word_suffix = word_parts[3]
-	elseif matchstr(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)') == word " increment/decrement integer surrounded by text (i.e. abc12)
+	elseif matchstr(word, s:re_int) == word " increment/decrement integer surrounded by text (i.e. abc12)
 		let b:nextval_type = 'int'
-		let word_parts = matchlist(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)')
+		let word_parts = matchlist(word,s:re_int)
 		let word_prefix = word_parts[1]
 		let word = word_parts[2]
 		let word_suffix = word_parts[3]
