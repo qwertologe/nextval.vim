@@ -234,6 +234,7 @@ function s:nextval(operator, count)
 		"execute ':w'
 	endif
 	call s:cleanup()
+  silent! call repeat#set("\<Plug>nextval" . (a:operator == '+' ? "Inc" : "Dec"), a:count)
 	return
 endfunction
 
