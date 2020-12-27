@@ -117,7 +117,7 @@ nnoremap <SID>nextvalInc :call <SID>nextval('+')<CR>
 nnoremap <unique> <script> <Plug>nextvalDec <SID>nextvalDec
 nnoremap <SID>nextvalDec :call <SID>nextval('-')<CR>
 
-let s:re_hex = "\\(8'h\\|#16r\\|16#\\|16r\\|" " more pre-chars
+let s:re_hex = "\\(\\d\*'h\\|#16r\\|16#\\|16r\\|" " more pre-chars
 let s:re_hex = s:re_hex . 'x"\|#x\|0[xh]\|\\[xuU]\|[XH]' . "'\\|" " 2 pre-chars
 let s:re_hex = s:re_hex . '[#\$hH]\|' " 1 pre-char
 let s:re_hex = s:re_hex . '\|\)' " no pre-chars
