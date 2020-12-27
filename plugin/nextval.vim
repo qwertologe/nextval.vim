@@ -112,12 +112,12 @@ if !hasmapto('<Plug>nextvalDec')
 	nmap <silent> <unique> <C-x> <Plug>nextvalDec
 endif
 " map <Plug> to internal function
-nnoremap <unique> <script> <Plug>nextvalInc <SID>nextvalInc
-nnoremap <SID>nextvalInc :call <SID>nextval('+')<CR>
-nnoremap <unique> <script> <Plug>nextvalDec <SID>nextvalDec
-nnoremap <SID>nextvalDec :call <SID>nextval('-')<CR>
+nnoremap <silent> <unique> <script> <Plug>nextvalInc <SID>nextvalInc
+nnoremap <SID>nextvalInc :<C-U>call <SID>nextval('+', v:count1)<CR>
+nnoremap <silent> <unique> <script> <Plug>nextvalDec <SID>nextvalDec
+nnoremap <SID>nextvalDec :<C-U>call <SID>nextval('-', v:count1)<CR>
 
-let s:re_hex = "\\(8'h\\|#16r\\|16#\\|16r\\|" " more pre-chars
+let s:re_hex = "\\(\\d\*'h\\|#16r\\|16#\\|16r\\|" " more pre-chars
 let s:re_hex = s:re_hex . 'x"\|#x\|0[xh]\|\\[xuU]\|[XH]' . "'\\|" " 2 pre-chars
 let s:re_hex = s:re_hex . '[#\$hH]\|' " 1 pre-char
 let s:re_hex = s:re_hex . '\|\)' " no pre-chars
@@ -128,7 +128,9 @@ let s:re_num = '\([''"]\?\)\(-\?[0-9]*\.[0-9]\+\)\([^0-9]\+\)\?'
 
 let s:re_bool = '\([''"]\)\?\(true\|false\|yes\|no\|on\|off\c\)\([''"]\)\?'
 
-function s:nextval_exec(word, operator)
+let s:re_int = "\\(\\d\*'d\\|[^0-9]\*\\)\\([0-9]\\+\\)\\([^0-9]\*\\)"
+
+function s:nextval_exec(word, operator, count)
 	let word=a:word
 
 	" determine type of word (int/hex)
@@ -150,9 +152,9 @@ function s:nextval_exec(word, operator)
 		let word_prefix = word_parts[1]
 		let word = word_parts[2]
 		let word_suffix = word_parts[3]
-	elseif matchstr(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)') == word " increment/decrement integer surrounded by text (i.e. abc12)
+	elseif matchstr(word, s:re_int) == word " increment/decrement integer surrounded by text (i.e. abc12)
 		let b:nextval_type = 'int'
-		let word_parts = matchlist(word,'\([^0-9]*\)\([0-9]\+\)\([^0-9]*\)')
+		let word_parts = matchlist(word,s:re_int)
 		let word_prefix = word_parts[1]
 		let word = word_parts[2]
 		let word_suffix = word_parts[3]
@@ -164,11 +166,11 @@ function s:nextval_exec(word, operator)
 
 	let newword=''
 	if b:nextval_type == 'int'
-		let newword = <SID>nextint(word,a:operator)
+		let newword = <SID>nextint(word,a:operator, a:count)
 	elseif b:nextval_type == 'num'
-		let newword = <SID>nextnum(word,a:operator)
+		let newword = <SID>nextnum(word,a:operator, a:count)
 	elseif b:nextval_type == 'hex'
-		let newword = <SID>nexthex(word,a:operator)
+		let newword = <SID>nexthex(word,a:operator, a:count)
 	elseif b:nextval_type == 'bool'
 		let newword = <SID>nextbool(word)
 	endif
@@ -188,7 +190,7 @@ function s:nextval_reset()
 endfunction
 
 " main
-function s:nextval(operator)
+function s:nextval(operator, count)
 	if !exists('b:nextval_column')
 		call s:nextval_reset()
 	endif
@@ -220,7 +222,7 @@ function s:nextval(operator)
 		let b:nextval_type = ''
 	endif
 
-	let newword=s:nextval_exec(word, a:operator)
+	let newword=s:nextval_exec(word, a:operator, a:count)
 
 	if exists('newword') && len(newword)>0
 		setlocal paste
@@ -232,6 +234,7 @@ function s:nextval(operator)
 		"execute ':w'
 	endif
 	call s:cleanup()
+  silent! call repeat#set("\<Plug>nextval" . (a:operator == '+' ? "Inc" : "Dec"), a:count)
 	return
 endfunction
 
@@ -267,18 +270,18 @@ function s:nextbool(value)
 	endfor
 endfunction
 
-function s:nextint(value,operator)
-	return a:operator == '+' ? str2nr(a:value)+1 : str2nr(a:value)-1
+function s:nextint(value,operator,count)
+  return a:operator == '+' ? str2nr(a:value)+a:count : str2nr(a:value)-a:count
 endfunction
 
 " change numeric value (n; ,n; n,n)
-function s:nextnum(value,operator)
+function s:nextnum(value,operator,count)
 	let dotpos = match(a:value,'\.')
 	let fractdigits = len(a:value)-dotpos-1
 	if a:operator == '+'
-		let result = str2float(a:value)+(1/pow(10,fractdigits))
+		let result = str2float(a:value)+(a:count/pow(10,fractdigits))
 	else
-		let result = str2float(a:value)-(1/pow(10,fractdigits))
+		let result = str2float(a:value)-(a:count/pow(10,fractdigits))
 	endif
 	let newnum = printf('%.' . fractdigits . 'f',result)
 	if dotpos == 0 && result < 1 && result > 0
@@ -288,13 +291,13 @@ function s:nextnum(value,operator)
 endfunction
 
 " change hex value (#X; 0xX; X)
-function s:nexthex(value,operator)
+function s:nexthex(value,operator,count)
 	let m = matchlist(a:value,s:re_hex)
 	let prefix = m[1]
 	let value = m[2]
 	let suffix = m[3]
 	let len = len(value)
-	let newval = a:operator == '+' ? str2nr(value,16)+1 : str2nr(value,16)-1
+	let newval = a:operator == '+' ? str2nr(value,16)+a:count : str2nr(value,16)-a:count
 	if strpart(value,0,1) != '0' " || ... todo ?! when will a use have fixed digits?! ... fmod(len,2)
 		let len = 1
 	endif
